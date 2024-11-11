@@ -3,6 +3,10 @@ from io import BytesIO
 from streamlit import session_state as ss
 from streamlit_pdf_viewer import pdf_viewer
 from wordcloud import WordCloud
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from textwrap import wrap
 
 import streamlit as st
 import matplotlib.pyplot as plt
@@ -23,27 +27,6 @@ api_key = st.secrets['openai']['api_key']
 # Define the client
 client = OpenAI(api_key=api_key)
 
-# Use Streamlit's markdown support to add custom styles
-st.markdown("""
-    <style>
-        .title {
-            font-size: 36px;
-            font-weight: bold;
-            color: #1E90FF;
-            text-align: center;
-        }
-        .header {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .expander-title {
-            font-size: 18px;
-            color: #2E8B57;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
 # Error handling for OpenAI API requests
 def safe_api_call(func, *args, **kwargs):
     try:
@@ -52,76 +35,41 @@ def safe_api_call(func, *args, **kwargs):
         st.error(f"Error occurred: {e}")
         return None
 
-# Theme management with color customization
-if 'theme' not in st.session_state:
-    st.session_state.theme = 'Light'  # default theme
-
-if 'bg_color' not in st.session_state:
-    st.session_state.bg_color = "#FFFFFF"  # default background color
-
-# Theme selection dropdown
-theme = st.selectbox("Choose a theme", ["Light", "Dark"], index=["Light", "Dark"].index(st.session_state.theme))
-
-# Custom theme color selection
-bg_color = st.color_picker("Select Background Color", value=st.session_state.bg_color)
-text_color = st.color_picker("Select Text Color", value="#000000")
-
-# Update the theme in session state
-if theme != st.session_state.theme:
-    st.session_state.theme = theme
-
-if bg_color != st.session_state.bg_color:
-    st.session_state.bg_color = bg_color
-
-# Apply the CSS based on the selected theme
-def apply_theme():
-    if st.session_state.theme == "Dark":
-        st.markdown(f"""
-            <style>
-                body {{
-                    background-color: #121212;
-                    color: white;
-                }}
-                .stButton>button {{
-                    background-color: #333;
-                    color: white;
-                }}
-                .stSelectbox>div>div>div>div>div {{
-                    background-color: #333;
-                    color: white;
-                }}
-            </style>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-            <style>
-                body {{
-                    background-color: {st.session_state.bg_color};
-                    color: {text_color};
-                }}
-                .stButton>button {{
-                    background-color: #1E90FF;
-                    color: white;
-                }}
-                .stSelectbox>div>div>div>div>div {{
-                    background-color: white;
-                    color: black;
-                }}
-            </style>
-        """, unsafe_allow_html=True)
-
-apply_theme()
-
 # Function to save text to a file (e.g., PDF)
 def save_text_to_file(text, filename="output.pdf"):
-    byte_data = BytesIO()
-    byte_data.write(text.encode('utf-8'))
-    byte_data.seek(0)
-    st.download_button(label="Download", 
-                       data=byte_data, 
-                       file_name=filename,
-                       mime='application/octet-stream')
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
 
+    # Initialize a text object for writing content at the top margin
+    text_object = c.beginText(40, height - 40)
+    text_object.setFont("Helvetica", 12)
+    text_object.setFillColor(colors.black)
+
+    # Wrap text to fit within page width
+    max_line_width = 500  # Width limit for the text in pixels
+    lines = text.splitlines()
+    wrapped_text = []
+    for line in lines:
+        wrapped_text.extend(wrap(line, width=max_line_width // 6))  # Adjust wrap width based on font size
+
+    # Add wrapped text line-by-line to the PDF
+    for line in wrapped_text:
+        text_object.textLine(line)
+
+    c.drawText(text_object)
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    # Streamlit download button for the PDF
+    st.download_button(
+        label="Download",
+        data=buffer,
+        file_name=filename,
+        mime="application/pdf"
+    )
+    
 # Translate text function
 def translate_text(text, target_language='English'):
     return safe_api_call(client.chat.completions.create,
