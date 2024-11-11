@@ -3,3 +3,4 @@ openai
 streamlit_pdf_viewer
 wordcloud
 pdfplumber
+reportlab
