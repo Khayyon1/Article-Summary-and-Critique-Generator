@@ -4,3 +4,4 @@ streamlit_pdf_viewer
 wordcloud
 pdfplumber
 reportlab
+pdf2image

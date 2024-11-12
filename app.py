@@ -7,6 +7,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from textwrap import wrap
+from pdf2image import convert_from_bytes
+
 
 import streamlit as st
 import matplotlib.pyplot as plt
@@ -159,10 +161,19 @@ def process_article_by_bytes(file_bytes):
     insights = generate_real_world_insights(text)
     return {"Summary": summary, "Critique": critique, "Real-World Insights": insights}
 
-def displayPDF(pdf):
+def displayPDF_with_viewer(pdf):
     base64_pdf = base64.b64encode(pdf.read()).decode('utf-8')
-    pdf_display = F'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
+    pdf_display = F'<iframe src="data:application/pdf;base64,{base64_pdf}" width="650" height="1000" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
+
+def displayPDF(pdf):
+    # Convert PDF to a list of images
+    images = convert_from_bytes(pdf.read())
+
+    # Display each page as a JPEG image
+    for page_num, img in enumerate(images):
+        st.image(img, caption=f"Page {page_num + 1}", use_column_width=True)
+
 
 # Validate file upload type
 def validate_file_type(uploaded_file):
