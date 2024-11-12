@@ -6,3 +6,5 @@ pdfplumber
 reportlab
 pillow
 pymupdf
+scikit-learn
+plotly

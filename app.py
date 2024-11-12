@@ -1,7 +1,6 @@
 from openai import OpenAI
 from io import BytesIO
 from streamlit import session_state as ss
-from streamlit_pdf_viewer import pdf_viewer
 from wordcloud import WordCloud
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -152,6 +151,12 @@ def process_article_by_path(file_path):
     tone = analyze_tone(text)
     quality = evaluate_article_quality(text)
 
+    st.session_state.text = text
+    st.session_state.tone = tone
+    st.session_state.quality = quality
+    st.session_state.summary = summary
+    st.session_state.critique = critique
+
     return {"Text": text, "Tone": tone, "Quality": quality, "Summary": summary, "Critique": critique, "Real-World Insights": insights}
 
 def process_article_by_bytes(file_bytes):
@@ -243,13 +248,6 @@ if pdf and validate_file_type(pdf):
     with st.spinner('Processing your article...'):
         results = process_article_by_path(pdf)
         st.success('Processing complete!')
-
-        # Word cloud generation section
-        st.subheader("3. Visualize with Word Cloud")
-        st.session_state.text = results['Text']
-        generate_wc = st.button("Generate Word Cloud")
-        if generate_wc:
-            display_wordcloud()
 
         # Interactive Article Summary, Tone, and Quality Analysis
         st.subheader("2. Article Summary, Tone, and Quality Analysis")
