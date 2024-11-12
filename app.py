@@ -7,13 +7,13 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from textwrap import wrap
-from pdf2image import convert_from_bytes
-
+from PIL import Image
 
 import streamlit as st
 import matplotlib.pyplot as plt
 import pdfplumber
 import base64
+import fitz
 
 # It still has issues with the theme change (light/dark)
 # and the file downloaded is not the best haha!!
@@ -166,15 +166,32 @@ def displayPDF_with_viewer(pdf):
     pdf_display = F'<iframe src="data:application/pdf;base64,{base64_pdf}" width="650" height="1000" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
 
-def displayPDF(pdf):
-    # Convert PDF to a list of images
-    images = convert_from_bytes(pdf.read())
+# Function to convert PDF to images using PyMuPDF (fitz)
+def convert_pdf_to_images(pdf_file):
+    # Open the PDF from the file-like object (BytesIO)
+    doc = fitz.open(stream=pdf_file.read(), filetype="pdf")  # Open the file using a stream
 
-    # Display each page as a JPEG image
+    images = []
+    
+    # Iterate through each page and convert to image
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)  # Loads the page
+        pix = page.get_pixmap()  # Converts the page to a pixmap (image)
+        
+        # Convert pixmap to PIL image
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        images.append(img)
+    
+    return images
+
+def displayPDF(pdf):
+    # Convert PDF to images using PyMuPDF
+    images = convert_pdf_to_images(pdf)
+
+    # Display each page as an image
     for page_num, img in enumerate(images):
         st.image(img, caption=f"Page {page_num + 1}", use_column_width=True)
-
-
+        
 # Validate file upload type
 def validate_file_type(uploaded_file):
     if uploaded_file is not None:
