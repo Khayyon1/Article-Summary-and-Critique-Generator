@@ -202,4 +202,5 @@ if text:
 
 # Add link to go back to the main page for summary/critique
 st.markdown("---")
-st.write("[Go back to the main page for Summary & Critique](#)")  # Replace with the actual link if needed
+st.markdown("Connect with me on Medium or Linkedin and let me know your thoughts")
+# st.write("[Go back to the main page for Summary & Critique](#)")  # Replace with the actual link if needed
